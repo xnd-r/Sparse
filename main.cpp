@@ -13,9 +13,10 @@ void get_matrix(int n, std::vector<int>& val, std::vector<int>& col, std::vector
 	if (generate) {
 		std::srand(unsigned(std::time(0)));
 		std::default_random_engine generator;
-		std::uniform_real_distribution<float> distribution(0., 1.);
+		std::uniform_real_distribution<float> distribution(0.f, 1.f);
 		std::vector<int> j_conunter;
 		int* i_conunter = new int[n] {0};
+    
 		for (int i = 0; i < n; ++i) {
 			for (int j = 0; j < i; ++j) {
 				if (distribution(generator) < .35f) {
