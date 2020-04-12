@@ -149,26 +149,113 @@ void base_gauss_reverse(int n, std::vector<int>& val, std::vector<int>& col,
 
 }
 
+void get_y1(std::vector<double>& tr_part, int isn, int dim, double* b, double* x) {
+	x[isn] = b[isn] / tr_part[0];
+	double sum;
+	int cnt;
+	for (int i = 1; i < dim; ++i) {
+		sum = 0.;
+		cnt = i * (i + 1) / 2;
+		for (int j = 0; j < i; ++j) {
+			sum += tr_part[cnt+j] * x[isn + j];
+		}
+		x[isn+i] = (b[isn + i] - sum) / tr_part[cnt + i];
+	}
+}
+void get_y2(int n, std::vector<int>& val, std::vector<int>& col,
+	std::vector<int>& row, double* x, double* b, int isn, int dim) {
+	for (int i = isn + dim; i < n; ++i) {
+		//x[i] = 0.;
+		for (int j = row[i]; j < row[i + 1]; j++) {
+			if (col[j] >= isn and col[j] < isn + dim) {
+				b[i] -= val[j] * x[col[j]];
+			}
+		}
+		//b[i] = b[i] - x[i];
+	}
+}
+
+void supernode_gauss_reverse(int n, std::vector<int>& val, std::vector<int>& col,
+	std::vector<int>& row, double* x, double* b, int nthreads) {
+	std::vector<int> supernodes;
+	std::vector<double> tr_part;
+	get_vector(n, b);
+	for (int i = 0; i < n; ++i) {
+		std::cout << b[i] << "\t";
+	}
+	std::cout << "\n";
+	int isn = 0; int dim = 1;
+	while (isn < n-1) {
+		tr_part.clear();
+		tr_part.push_back(val[row[isn + 1] - 1]);
+		while (true) {
+			for (int j = row[isn + dim]; j < row[isn + dim + 1]; ++j) {
+				if (col[row[isn + 1] - 1] == col[j]) {
+					if (row[isn + dim + 1] - j == dim + 1) {
+						dim += 1;
+						for (int el = j; el < j + dim; ++el) {
+							tr_part.push_back(val[el]);
+						}
+						if (dim + isn == n) {
+							break;
+						}
+						continue;
+					}
+					else {
+						break;
+					}
+				}
+			}
+			get_y1(tr_part, isn, dim, b, x);
+			get_y2(n, val, col, row, x, b, isn, dim);
+			//std::cout << "\nMatrix:\n";
+			//for (std::vector<double>::iterator it = tr_part.begin(); it != tr_part.end(); ++it) {
+			//	std::cout << *it << "\t";
+			//}
+			//std::cout << "\n";
+
+
+			//std::cout << "***" << std::endl;
+			isn += dim;
+
+			supernodes.push_back(dim);
+			dim = 1;
+			break;
+		}
+	}
+	if (isn == n - 1){
+		supernodes.push_back(dim);
+		x[n - 1] = b[n - 1] / val[val.size() - 1];
+		//std::cout << "\nMatrix:\n" << val[val.size()-1] << "\n";
+
+		// lma for last elem
+	}
+	//for (std::vector<int>::iterator it = supernodes.begin(); it != supernodes.end(); ++it) {
+	//	std::cout << *it << "\t";
+	//}
+}
 int main(int* argc, char** argv){
-	int n = atoi(argv[1]);
-	int nthreads = atoi(argv[2]);
+	int n = 6; // atoi(argv[1]);
+	int nthreads = 1; // atoi(argv[2]);
 	std::vector<int> val; 
 	std::vector<int> col; 
 	std::vector<int> row; 
-	double* b = new double[n * 2];
+	double* b = new double[n * 2]{ 0. };
 	double* x = b + n;
 
 	get_matrix(n, val, col, row, true, false, false);
 	print_matrix(n, val, col, row);
-	base_gauss_reverse(n, val, col, row, x, b, nthreads);
+	//base_gauss_reverse(n, val, col, row, x, b, nthreads);
 
 
+
+	std::cout << "\n";
+	supernode_gauss_reverse(n, val, col, row, x, b, nthreads);
 	std::cout.setf(std::ios::fixed);
-	std::cout.precision();
+	//std::cout.precision();
 	for (int i = 0; i < n; ++i) {
 		std::cout << x[i] << "\t=\t" << b[i] << "\n";
 	}
-	std::cout << "\n";
 	delete[] b;
 	return 0;
 }
