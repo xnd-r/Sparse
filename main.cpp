@@ -1,174 +1,133 @@
 #include <iostream>
-#include <cstdlib>
-#include <ctime>
 #include <vector>
-#include <random>
-#include <omp.h>
 #include <fstream>
-#include <string>
+//#include <ctime>
+//#include <random>
 
+void read_ccs(int& n, double*& val, int*& row, int*& col_index) {
+	std::ifstream file("mtx.mtx");
+	while (file.peek() == '%') {
+		file.ignore(2048, '\n');
+	}
 
-void get_matrix(int n, std::vector<int>& val, std::vector<int>& col, std::vector<int>& row,
-	bool generate, bool to_file, bool from_file){
-	if (generate) {
-		std::srand(unsigned(std::time(0)));
-		std::default_random_engine generator;
-		std::uniform_real_distribution<float> distribution(0.f, 1.f);
-		std::vector<int> j_conunter;
-		int* i_conunter = new int[n] {0};
-    
-		for (int i = 0; i < n; ++i) {
-			for (int j = 0; j < i; ++j) {
-				if (distribution(generator) < .35f) {
-					col.push_back(j);
-					i_conunter[i] += 1;
-					val.push_back(std::rand() % 10 + 1);
-				}
-			}
-			col.push_back(i);
-			i_conunter[i] += 1;
-			val.push_back(std::rand() % 10 + 1);
+	int nz;
+	file >> n >> n >> nz;
+	col_index = new int[n + 1];
+	col_index[0] = 0;
+	val = new double[nz];
+	row = new int[nz];
+	int col_i, row_i, cnt = 0, cnt1 = 1;
+
+	for (int i = 0; i < nz; ++i) {
+		file >> row_i >> col_i >> val[i];
+		row[i] = row_i - 1;
+		if (col_i == cnt1) {
+			cnt++;
+			continue;
 		}
-		row.push_back(0);
-		for (int i = 1; i < n + 1; ++i) {
-			row.push_back(i_conunter[i - 1] + row[i - 1]);
-		}
-		delete[] i_conunter;
-		if (to_file) {
-			std::ofstream file;
-			//std::string name = "data\\";
-			//name.append(std::to_string(n).append("_").append(std::to_string(val.size())).append(".txt"));
-			//file.open(name);
-			file.open("data\\matrix.txt");
-			file << n << "\n";
-			file << val.size() << "\n";
-			file << row.size() << "\n";
-			for (std::vector<int>::iterator it = val.begin(); it != val.end(); ++it) {
-				file << *it << " ";
-			}
-			file << "\n";
-			for (std::vector<int>::iterator it = col.begin(); it != col.end(); ++it) {
-				file << *it << " ";
-			}
-			file << "\n";
-			for (std::vector<int>::iterator it = row.begin(); it != row.end(); ++it) {
-				file << *it << " ";
-			}
-			file << "\n";
-			file.close();
+		else {
+			col_index[cnt1] = cnt;
+			cnt++;
+			cnt1++;
 		}
 	}
-	if (from_file) {
-		std::ifstream file ("data\\matrix.txt");
-		if (file.is_open())
-		{
-			file >> n;
-			int nz, rows;
-			file >> nz >> rows;
-			int value;
-			for (int i = 0; i < nz; ++i) {
-				file >> value;
-				val.push_back(value);
-			}
-			for (int i = 0; i < nz; ++i) {
-				file >> value;
-				col.push_back(value);
-			}
-			for (int i = 0; i < rows; ++i) {
-				file >> value;
-				row.push_back(value);
-			}
-			file.close();
-		}
-	}
+	col_index[n] = nz;
 }
-
-void print_matrix(int n, std::vector<int>& val, std::vector<int>& col, std::vector<int>& row){
-	std::cout << "Matrix:\n";
-	for (int ir = 0; ir < row.size()-1; ++ir){
-		int start = row[ir];
-		int finish = row[ir+1];
-		int j = 0;
-		while(start< finish){
-			while(j < n) {
-				if (j != col[start]){
-					std::cout << "0" << "\t";
-					j += 1;
-				}
-				else{
-					std::cout << val[start] << "\t";
-					start += 1;
-					j += 1;
-					break;
-				}
-			}
-		}
-		std::cout << "\n";
-	}
-	std::cout << "\n";
-
-	//std::cout << "\n\nValues:\n";
-	//for (std::vector<int>::iterator it = val.begin(); it != val.end(); ++it) {
-	//	std::cout << *it << "\t";
-	//}
-	//std::cout << "\n\nColumns:\n";
-	//for (std::vector<int>::iterator it = col.begin(); it != col.end(); ++it) {
-	//	std::cout << *it << "\t";
-	//}
-	//std::cout << "\n\nRow indexes:\n";
-	//for (std::vector<int>::iterator it = row.begin(); it != row.end(); ++it) {
-	//	std::cout << *it << "\t";
-	//}
-	//std::cout << "\n\nMatrix dimension:\n" << n;
-	//std::cout << "\n\nNon-zero elements:\n" << val.size() << "\n\n";
-}
-
 
 void get_vector(int n, double* b) {
-	std::srand(unsigned(std::time(0)));
+	//std::srand(unsigned(std::time(0)));
 	for (int i = 0; i < n; ++i) {
-		b[i] = rand() % 10 + 1;
+		//b[i] = rand() % 10 + 1;
+		b[i] = i + 1;
+		b[n + i] = b[i];
 	}
 }
 
-void base_gauss_reverse(int n, std::vector<int>& val, std::vector<int>& col,
-	std::vector<int>& row, double* x, double* b, int nthreads) {
-	get_vector(n, b);
-	double sum;
-	double t1 = omp_get_wtime();
-	x[0] = b[0] / val[row[0]];
-	for (int ir = 1; ir < n; ++ir) {
-		sum = 0.;
-		#pragma omp parallel for num_threads(nthreads)
-		for (int j = row[ir]; j < row[ir + 1]-1; ++j) {
-			sum += val[j] * x[col[j]];
+void get_supernodes(int n, int* row, int*col_index, int*& nodes, int& sn) {
+	std::vector<int> supernodes;
+	supernodes.push_back(0);
+	int isn = 0;
+	int dim = 1;
+	int st, fn;
+	do {
+		for (int j = 0; j < dim; ++j) {
+			if (row[col_index[isn + j] + dim - j] != isn + dim) {
+				isn += dim;
+				supernodes.push_back(dim);
+				dim = 0;
+				break;
+			}
 		}
-		x[ir] = (b[ir] - sum) / val[row[ir + 1]-1];
-	}
-	std::cout << "Time: \t" << omp_get_wtime() - t1 << "\tthreads " << nthreads << "\n\n";
+		dim += 1;
+	} while (isn < n);
 
+	nodes = new int[supernodes.size()];
+	nodes[0] = 0;
+	sn = supernodes.size();
+	for (int i = 1; i < sn; ++i) {
+		nodes[i] = nodes[i - 1] + supernodes[i];
+	}
 }
 
-int main(int* argc, char** argv){
-	int n = atoi(argv[1]);
-	int nthreads = atoi(argv[2]);
-	std::vector<int> val; 
-	std::vector<int> col; 
-	std::vector<int> row; 
-	double* b = new double[n * 2];
-	double* x = b + n;
+void get_tr_part(int isn, int dim, double* b, double* x, double* val, int* col) {
+	x[isn] = x[isn] / val[col[isn]];
+	double sum;
+	int cnt1, cnt2;
+	for (int k = 1; k < dim; ++k) {
+		sum = 0.;
+		cnt1 = 0, cnt2 = k;
+		for (int cnt = 0; cnt < k; ++cnt) {
+			sum += val[col[isn + cnt1] + cnt2] * x[isn + cnt];
+			cnt1++;
+			cnt2--;
+		}
+		x[isn + k] = (x[isn + k] - sum) / val[col[isn + k]];
+	}
+}
 
-	get_matrix(n, val, col, row, true, false, false);
-	print_matrix(n, val, col, row);
-	base_gauss_reverse(n, val, col, row, x, b, nthreads);
+void get_rect_part(int isn, int dim, double* b, double* x, double* val, int* row, int* col) {
+	for (int i = isn; i < isn + dim; ++i) {
+		for (int j = col[i] + dim - i + isn; j < col[i + 1]; ++j) {
+			x[row[j]] -= x[i] * val[j];
+		}
+	}
+}
 
-
+void print_result(int n, double* x, double* b) {
 	std::cout.setf(std::ios::fixed);
 	std::cout.precision();
+	std::cout << "\n   x: \t\t\t   b:\n";
 	for (int i = 0; i < n; ++i) {
 		std::cout << x[i] << "\t=\t" << b[i] << "\n";
 	}
-	std::cout << "\n";
+}
+
+
+int main(int* argc, char** argv){
+	int n; int sn;
+	int* supernodes = nullptr;
+	double* val = nullptr;
+	int* row = nullptr, *col_index = nullptr;
+
+	read_ccs(n, val, row, col_index);
+	double* b = new double[n * 2]{ 0. };
+	double* x = b + n;
+	get_supernodes(n, row, col_index, supernodes, sn);
+	get_vector(n, b);
+	
+	// supernodal algorithm
+	for (int i = 0; i < sn - 1; ++i) {
+		get_tr_part(supernodes[i], supernodes[i + 1] - supernodes[i], b, x, val, col_index);
+		get_rect_part(supernodes[i], supernodes[i + 1] - supernodes[i], b, x, val, row, col_index);
+	}
+
+	//print_matrix(n, val, row, col_index);
+	//check_result(n, val, col, row, x, b);
+	print_result(n, x, b);
+	
 	delete[] b;
+	delete[] val;
+	delete[] row;
+	delete[] col_index;
 	return 0;
 }
