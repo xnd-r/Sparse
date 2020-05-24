@@ -352,3 +352,6 @@ MigrationBackup/
 .vscode/
 *.out
 Sparse/
+My Advisor Results - Sparse/
+x64/
+legacy*
