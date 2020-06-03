@@ -7,7 +7,7 @@ int main(int argc, char** argv) {
 	size_t sn;
 	int *nodes = nullptr, *row = nullptr, *col_index = nullptr;
 	double* val = nullptr, *b = nullptr, *dense = nullptr;
-	const char* filename = "mtx_nonpad.mtx";
+	const char* filename = "mtx_pad.mtx";
 	double time = 0.;
 
 	read_ccs(filename, n, nz, val, row, col_index);
@@ -20,9 +20,15 @@ int main(int argc, char** argv) {
 	double* x = b + n;
 	dense = new double[n*n]{ 0. };
 	get_vector(n, b);
-	get_supernodes(n, row, col_index, nodes, sn);
-	time = supernodal_lower(sn, nodes, b, x, val, row, col_index);
+	//get_supernodes(n, row, col_index, nodes, sn);
+	get_supernodes_new(n, val, row, col_index, nodes, sn);
+	//time = supernodal_lower(sn, nodes, b, x, val, row, col_index);
 	//time = supernodal_blas_lower(n, sn, nodes, b, x, val, row, col_index);
+	double* y = new double[n];
+	for (int i = 0; i < n; ++i) {
+		y[i] = x[i];
+	}
+	time = supernodal_blas_upper(n, nz, sn, nodes, b, x, val, row, col_index);
 
 	//read_ccs(filename, n, nz, val, row, col_index);
 	//b = new double[n * 2]{ 0. };
@@ -35,12 +41,12 @@ int main(int argc, char** argv) {
 	double* val_t = new double[nz] {0};
 	int* row_t = new int[nz] {0};
 	int* col_index_t = new int[n + 1]{ 0 };
-	transpose(n, nz, val, row, col_index, val_t, row_t, col_index_t);
 	print_result(n, x, b);
 	check_result(n, val_t, row_t, col_index_t, x, b);
 	std::cout << "\nTIME " << time;
 
 	delete[] b;
+	delete[] y;
 	delete[] val;
 	delete[] row;
 	delete[] col_index;

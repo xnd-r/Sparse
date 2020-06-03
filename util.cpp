@@ -27,6 +27,10 @@ void read_ccs(const char* name, int& n, int& nz, double*& val, int*& row, int*& 
 		}
 	}
 	col_index[n] = nz;
+	for (int i = 0; i <= n; ++i) {
+		std::cout << col_index[i] << " ";
+	}
+	std::cout << "\n";
 }
 
 void get_vector(int n, double* b) {
