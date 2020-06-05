@@ -27,17 +27,15 @@ void read_ccs(const char* name, int& n, int& nz, double*& val, int*& row, int*& 
 		}
 	}
 	col_index[n] = nz;
-	for (int i = 0; i <= n; ++i) {
-		std::cout << col_index[i] << " ";
-	}
-	std::cout << "\n";
+	//for (int i = 0; i <= n; ++i) {
+	//	std::cout << col_index[i] << " ";
+	//}
+	//std::cout << "\n";
 }
 
 void get_vector(int n, double* b) {
-	//std::srand(unsigned(std::time(0)));
 	#pragma omp parallel for num_threads(4)
 	for (int i = 0; i < n; ++i) {
-		//b[i] = rand() % 10 + 1;
 		b[i] = i + 1.;
 		b[n + i] = b[i];
 	}
@@ -209,19 +207,14 @@ void transpose(int n, int nz, double*& val, int*& row, int*& col_index,
 	//std::cout << "\n";
 }
 
-void check_result(int n, double* val, int* col, int* row, double* x, double* b) {
-	double resudual = 0.;
-	double sum;
-	std::cout << "\n1-Norm of Resudial vector: \n";
-	for (int ir = 0; ir < n; ++ir) {
-		sum = 0.;
-		for (int j = row[ir]; j < row[ir + 1]; ++j) {
-			sum += val[j] * x[col[j]];
-		}
-		resudual += abs(b[ir] - sum);
-		//std::cout << b[ir] - sum << "\t";
+double check_result(int n, double* x1, double* x2) {
+	double sum = 0.;
+	std::cout << "\nL_2(sol - pardiso_sol): \n";
+	for (int i = 0; i < n; ++i) {
+		sum += pow(x1[i] - x2[i], 2);
 	}
 	std::cout.setf(std::ios::fixed);
 	std::cout.precision(32);
-	std::cout << resudual << "\n";
+	std::cout << sqrt(sum) << "\n";
+	return sum;
 }
