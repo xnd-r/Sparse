@@ -358,3 +358,4 @@ legacy*
 *.mtx
 doc/
 tmp*
+2020_*

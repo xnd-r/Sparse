@@ -123,7 +123,7 @@ void get_factor(int n, double*& val, int*& row, int*& col_index, double*& dense)
 	char uplo = 'U';
 	int info;
 	dpotrf(&uplo, &n, dense, &n, &info);
-	std::cout << "\ninfo: \t" << info << "\n";
+	//std::cout << "\ninfo: \t" << info << "\n";
 	//for (int i = 0; i < n; ++i) {
 	//	for (int j = 0; j <= i; ++j) {
 	//		std::cout << dense[i * n + j] << "\t";

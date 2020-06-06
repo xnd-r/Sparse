@@ -1,5 +1,6 @@
 ﻿#include "util.h"
 #include "core.h"
+#include "string.h"
 
 int main(int argc, char** argv) {
 	int n = 0, nz = 0;
@@ -7,8 +8,9 @@ int main(int argc, char** argv) {
 	double* val = nullptr, *step_val = nullptr, *b = nullptr;
 	int *nodes = nullptr, *row = nullptr, *col_index = nullptr;
 	int *step_row = nullptr, *step_col_index = nullptr;
-	const char* filename = "bcsstk01.mtx";
-	const char* algo = "blas";
+	const char* filename = argv[1];
+	const char* algo = argv[2];
+	bool compare = false;
 	double time = 0.;
 
 	read_ccs(filename, n, nz, val, row, col_index);
@@ -20,7 +22,7 @@ int main(int argc, char** argv) {
 	get_factor(n, val, row, col_index, dense);
 	read_factor(n, nz, val, row, col_index);
 
-	if (algo == "base") {
+	if (strcmp(algo, "base") == 0) {
 		double* val_t = new double[nz] {0.};
 		int* row_t = new int[nz] {0};
 		int* col_index_t = new int[n + 1]{0};
@@ -35,7 +37,7 @@ int main(int argc, char** argv) {
 		delete[] row_t;
 		delete[] col_index_t;
 	}
-	else if (algo == "custom") {
+	else if (strcmp(algo, "custom") == 0) {
 		get_supernodes(n, nz, val, row, col_index, nodes, sn, step_val, step_row, step_col_index);
 		time += supernodal_lower(sn, nodes, x, val, row, col_index);
 		#pragma omp parallel for
@@ -44,7 +46,7 @@ int main(int argc, char** argv) {
 		}
 		time += supernodal_upper(sn, nodes, y, val, row, col_index);
 	}
-	else if (algo == "blas") {
+	else if (strcmp(algo, "blas") == 0) {
 		get_supernodes(n, nz, val, row, col_index, nodes, sn, step_val, step_row, step_col_index);
 		time += supernodal_blas_lower(n, sn, nodes, x, step_val, step_row, step_col_index);
 		#pragma omp parallel for
@@ -54,17 +56,21 @@ int main(int argc, char** argv) {
 		time += supernodal_blas_upper(n, nz, sn, nodes, y, step_val, step_row, step_col_index);
 	}
 	else {
-		std::cout << "\nUnknown type of algo. Exit";
+		std::cout << "\nUnknown type of algo " << algo << ". Exit";
 		return -1;
 	}
-	delete[] val;
-	delete[] row;
-	delete[] col_index;
-	read_ccs(filename, n, nz, val, row, col_index);
-	get_vector(n, b);
-	time = pardiso_solution(n, val, row, col_index, b, x);
-	check_result(n, x, y);
-	std::cout << "\nTime: " << time;
+
+	if (compare) {
+		delete[] val;
+		delete[] row;
+		delete[] col_index;
+		read_ccs(filename, n, nz, val, row, col_index);
+		get_vector(n, b);
+		time = pardiso_solution(n, val, row, col_index, b, x);
+		check_result(n, x, y);
+	}
+
+	std::cout << time;
 
 	delete[] b;
 	delete[] y;
