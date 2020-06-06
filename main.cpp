@@ -1,52 +1,85 @@
 ﻿#include "util.h"
 #include "core.h"
-
+#include "string.h"
 
 int main(int argc, char** argv) {
 	int n = 0, nz = 0;
-	size_t sn;
+	size_t sn = 0;
+	double* val = nullptr, *step_val = nullptr, *b = nullptr;
 	int *nodes = nullptr, *row = nullptr, *col_index = nullptr;
-	double* val = nullptr, *b = nullptr, *dense = nullptr;
-	const char* filename = "mtx_nonpad.mtx";
+	int *step_row = nullptr, *step_col_index = nullptr;
+	const char* filename = argv[1];
+	const char* algo = argv[2];
+	bool compare = false;
 	double time = 0.;
 
 	read_ccs(filename, n, nz, val, row, col_index);
-
-	//dense = new double[n*n]{ 0. };
-	//get_factor(n, val, row, col_index, dense);
-
-	//read_factor(n, nz, val, row, col_index);
 	b = new double[n * 2]{ 0. };
 	double* x = b + n;
-	dense = new double[n*n]{ 0. };
 	get_vector(n, b);
-	get_supernodes(n, row, col_index, nodes, sn);
-	time = supernodal_lower(sn, nodes, b, x, val, row, col_index);
-	//time = supernodal_blas_lower(n, sn, nodes, b, x, val, row, col_index);
+	double* y = new double[n];
+	double* dense = new double[n*n]{ 0. };
+	get_factor(n, val, row, col_index, dense);
+	read_factor(n, nz, val, row, col_index);
 
-	//read_ccs(filename, n, nz, val, row, col_index);
-	//b = new double[n * 2]{ 0. };
-	//double* x = b + n;
-	//dense = new double[1];
-	//get_vector(n, b);
-	//time = pardiso_solution(n, val, row, col_index, b, x);
-	//read_factor(n, nz, val, row, col_index);
+	if (strcmp(algo, "base") == 0) {
+		double* val_t = new double[nz] {0.};
+		int* row_t = new int[nz] {0};
+		int* col_index_t = new int[n + 1]{0};
+		transpose(n, nz, val, row, col_index, val_t, row_t, col_index_t);
+		time += base_gauss_lower(n, val_t, row_t, col_index_t, x, b);
+		#pragma omp parallel for
+		for (int i = 0; i < n; ++i) {
+			y[i] = x[i];
+		}
+		time += base_gauss_upper(n, val, row, col_index, y, x);
+		delete[] val_t;
+		delete[] row_t;
+		delete[] col_index_t;
+	}
+	else if (strcmp(algo, "custom") == 0) {
+		get_supernodes(n, nz, val, row, col_index, nodes, sn, step_val, step_row, step_col_index);
+		time += supernodal_lower(sn, nodes, x, val, row, col_index);
+		#pragma omp parallel for
+		for (int i = 0; i < n; ++i) {
+			y[i] = x[i];
+		}
+		time += supernodal_upper(sn, nodes, y, val, row, col_index);
+	}
+	else if (strcmp(algo, "blas") == 0) {
+		get_supernodes(n, nz, val, row, col_index, nodes, sn, step_val, step_row, step_col_index);
+		time += supernodal_blas_lower(n, sn, nodes, x, step_val, step_row, step_col_index);
+		#pragma omp parallel for
+		for (int i = 0; i < n; ++i) {
+			y[i] = x[i];
+		}
+		time += supernodal_blas_upper(n, nz, sn, nodes, y, step_val, step_row, step_col_index);
+	}
+	else {
+		std::cout << "\nUnknown type of algo " << algo << ". Exit";
+		return -1;
+	}
 
-	double* val_t = new double[nz] {0};
-	int* row_t = new int[nz] {0};
-	int* col_index_t = new int[n + 1]{ 0 };
-	transpose(n, nz, val, row, col_index, val_t, row_t, col_index_t);
-	print_result(n, x, b);
-	check_result(n, val_t, row_t, col_index_t, x, b);
-	std::cout << "\nTIME " << time;
+	if (compare) {
+		delete[] val;
+		delete[] row;
+		delete[] col_index;
+		read_ccs(filename, n, nz, val, row, col_index);
+		get_vector(n, b);
+		time = pardiso_solution(n, val, row, col_index, b, x);
+		check_result(n, x, y);
+	}
+
+	std::cout << time;
 
 	delete[] b;
+	delete[] y;
 	delete[] val;
 	delete[] row;
 	delete[] col_index;
-	delete[] val_t;
-	delete[] row_t;
-	delete[] col_index_t;
+	delete[] step_col_index;
+	delete[] step_row;
+	delete[] step_val;
 	delete[] dense;
 	delete[] nodes;
 	return 0;
