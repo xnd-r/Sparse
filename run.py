@@ -5,8 +5,9 @@ import os
 
 filename = os.path.join(os.getcwd(), "x64", "Release", "Sparse.exe")
 algos = ["base", "custom", "blas"]
-matrices = ["bcsstk01.mtx", "bcsstk06.mtx"]
-repeats = 4
+matrices = os.listdir(os.path.join(os.getcwd(), "matrices"))
+print(matrices)
+repeats = 3
 
 def one_res(name):
 	proc = Popen(name, shell=True, stdout=PIPE, stderr=PIPE)
@@ -17,27 +18,30 @@ def one_res(name):
 	return res[0]
 
 def min_res(name):
-	min_time = 1e6
+	min_res = [1e6, 1e6]
 	for i in range(repeats):
-		time = float(one_res(name))
-		if time < min_time:
-			min_time = time
-	return min_time
+		res = (one_res(name))
+		res = str(res)[2:-1]
+		print(res)
+		if float(res[0]) < float(min_res[0]):
+			min_res = res
+	return [float(r) for r in min_res.split(' ')]
 
 def get_times():
-	run_name = datetime.datetime.now().strftime('%Y:%m:%d:%H:%M:%S').replace(":","_")
+	run_name = datetime.datetime.now().strftime('%Y:%m:%d:%H:%M:%S').replace(":", "_")
 	os.makedirs(os.path.join(os.getcwd(), run_name), exist_ok=False)
 
 	with open(os.path.join(os.getcwd(), run_name, "times.csv"), "w") as f:
 		f.write(";") 
 		for a in algos:
-			f.write(a + ';')
+			f.write(a + ';' + "error;")
 		f.write("\n")
 		for m in matrices:
 			f.write(m + ";")
 			for a in algos:
 				string = os.path.join(os.getcwd(), filename + " " + m + " " + a)
-				f.write(str(min_res(string)) + ";")
+				res = min_res(string)
+				f.write(str(res[0]) + ";" + str(res[1]) + ";")
 			f.write("\n")
 
 if __name__ == "__main__":
