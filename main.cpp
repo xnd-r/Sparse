@@ -20,9 +20,9 @@ int main(int argc, char** argv) {
 	double* x = b + n;
 	get_vector(n, b);
 	double* y = new double[n];
-	double* dense = new double[n*n]{ 0. };
-	get_factor(n, val, row, col_index, dense);
-	read_factor(n, nz, val, row, col_index);
+	//double* dense = new double[n*n]{ 0. };
+	//get_factor(n, val, row, col_index, dense);
+	//read_factor(n, nz, val, row, col_index);
 
 	if (strcmp(algo, "base") == 0) {
 		double* val_t = new double[nz] {0.};
@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
 	delete[] step_col_index;
 	delete[] step_row;
 	delete[] step_val;
-	delete[] dense;
+	//delete[] dense;
 	delete[] nodes;
 	return 0;
 }

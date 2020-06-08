@@ -22,6 +22,8 @@ def min_res(name):
 	for i in range(repeats):
 		res = (one_res(name))
 		res = str(res)[2:-1]
+		print(res)
+
 		if float(res[0]) < float(min_res[0]):
 			min_res = res
 	return [float(r) for r in min_res.split(' ')]
@@ -40,7 +42,6 @@ def get_times():
 			for a in algos:
 				string = os.path.join(os.getcwd(), filename + " " + m + " " + a)
 				res = min_res(string)
-				# print(res)
 				f.write(str(res[0]) + ";" + str(res[1]) + ";")
 			f.write("\n")
 
