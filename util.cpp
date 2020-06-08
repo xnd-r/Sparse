@@ -209,12 +209,12 @@ void transpose(int n, int nz, double*& val, int*& row, int*& col_index,
 
 double check_result(int n, double* x1, double* x2) {
 	double sum = 0.;
-	std::cout << "\nL_2(sol - pardiso_sol): \n";
+	//std::cout << "\nL_2(sol - pardiso_sol): \n";
 	for (int i = 0; i < n; ++i) {
 		sum += pow(x1[i] - x2[i], 2);
 	}
-	std::cout.setf(std::ios::fixed);
-	std::cout.precision(32);
-	std::cout << sqrt(sum) << "\n";
+	//std::cout.setf(std::ios::fixed);
+	//std::cout.precision(32);
+	std::cout << " " << sqrt(sum);
 	return sum;
 }
