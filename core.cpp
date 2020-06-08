@@ -67,7 +67,6 @@ double get_supernodes(int n, int nz, double* val, int* row, int*col_index, int*&
 	for (int i = 0; i <= n; ++i) {
 		step_col_index[i] = col_index[i];
 	}
-	int flag = 0;
 	int next_elem;
 
 	double t1 = omp_get_wtime();

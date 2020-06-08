@@ -8,6 +8,8 @@ int main(int argc, char** argv) {
 	double* val = nullptr, *step_val = nullptr, *b = nullptr;
 	int *nodes = nullptr, *row = nullptr, *col_index = nullptr;
 	int *step_row = nullptr, *step_col_index = nullptr;
+	//const char* filename = "mtx_new.mtx";
+	//const char* algo = "base";
 	const char* filename = argv[1];
 	const char* algo = argv[2];
 	bool compare = false;
@@ -32,7 +34,7 @@ int main(int argc, char** argv) {
 		for (int i = 0; i < n; ++i) {
 			y[i] = x[i];
 		}
-		time += base_gauss_upper(n, val, row, col_index, y, x);
+		//time += base_gauss_upper(n, val, row, col_index, y, x);
 		delete[] val_t;
 		delete[] row_t;
 		delete[] col_index_t;
@@ -44,7 +46,7 @@ int main(int argc, char** argv) {
 		for (int i = 0; i < n; ++i) {
 			y[i] = x[i];
 		}
-		time += supernodal_upper(sn, nodes, y, val, row, col_index);
+		//time += supernodal_upper(sn, nodes, y, val, row, col_index);
 	}
 	else if (strcmp(algo, "blas") == 0) {
 		get_supernodes(n, nz, val, row, col_index, nodes, sn, step_val, step_row, step_col_index);
@@ -53,7 +55,7 @@ int main(int argc, char** argv) {
 		for (int i = 0; i < n; ++i) {
 			y[i] = x[i];
 		}
-		time += supernodal_blas_upper(n, nz, sn, nodes, y, step_val, step_row, step_col_index);
+		//time += supernodal_blas_upper(n, nz, sn, nodes, y, step_val, step_row, step_col_index);
 	}
 	else {
 		std::cout << "\nUnknown type of algo " << algo << ". Exit";
@@ -69,8 +71,17 @@ int main(int argc, char** argv) {
 		time = pardiso_solution(n, val, row, col_index, b, x);
 		check_result(n, x, y);
 	}
-
+	get_vector(n, b);
+	sparse_matrix_t A;
+	mkl_sparse_d_create_csc(&A, SPARSE_INDEX_BASE_ZERO, n, n, col_index, col_index + 1, row, val);
+	matrix_descr descr;
+	descr.type = SPARSE_MATRIX_TYPE_SYMMETRIC;
+	descr.mode = SPARSE_FILL_MODE_LOWER;
+	descr.diag = SPARSE_DIAG_NON_UNIT;
+	mkl_sparse_d_trsv(SPARSE_OPERATION_NON_TRANSPOSE, 1., A, descr, b, x);
 	std::cout << time;
+	check_result(n, x, y);
+
 
 	delete[] b;
 	delete[] y;
