@@ -23,6 +23,7 @@ def min_res(name):
 		res = (one_res(name))
 		res = str(res)[2:-1]
 		print(res)
+
 		if float(res[0]) < float(min_res[0]):
 			min_res = res
 	return [float(r) for r in min_res.split(' ')]
