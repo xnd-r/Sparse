@@ -353,7 +353,7 @@ double pardiso_solution(int n, double* val, int* row, int*col_index, double* b, 
 		printf("\nERROR during numerical factorization: %d", error);
 		exit(2);
 	}
-	printf("\nFactorization completed ... ");
+	//printf("\nFactorization completed ... ");
 
 	/* -----------------------------------------------*/
 	/* .. Back substitution and iterative refinement. */
@@ -370,7 +370,7 @@ double pardiso_solution(int n, double* val, int* row, int*col_index, double* b, 
 		printf("\nERROR during solution: %d", error);
 		exit(3);
 	}
-	printf("\nSolve completed ... ");
+	//printf("\nSolve completed ... ");
 	//printf("\nThe solution of the system is: ");
 	//for (i = 0; i < n; i++)
 	//{

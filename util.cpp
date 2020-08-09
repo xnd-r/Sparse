@@ -108,6 +108,168 @@ void dense_to_sparse(int n, double* dense, double*& val_s, int*& row_s, int*& co
 	file.close();
 }
 
+double get_random_L_bin(int n, int& nz, size_t& sn, double density) {
+	int start_ind = 0, dim = 0, pattern_elems = 0, random_index = 0;
+	srand(static_cast <unsigned> (47));
+	//int max_node_size = n / 10 / log(n);
+	int max_node_size = 3;
+
+
+	std::vector<int> col_index_v;
+	std::vector<int> supernodes_v;
+	std::vector<int> pattern;
+	col_index_v.push_back(0);
+
+	supernodes_v.push_back(0);
+	FILE *fp;
+	auto si = sizeof(int);
+	int tmp_ind = 0;
+	if ((fp = fopen("BIN_MAT.bin", "wb")) == NULL) {
+		printf("Cannot open file.");
+		return 1;
+	}
+	double t1 = omp_get_wtime();
+
+	while (start_ind < n) {
+		dim = rand() % max_node_size + 1;
+		if (dim >= n - start_ind) {
+			dim = n - start_ind;
+		}
+
+		pattern_elems = (int)(density * (n - start_ind - dim));
+		for (int el = 0; el < pattern_elems; ++el) {
+			pattern.emplace_back(rand() % (n - start_ind - dim) + start_ind + dim);
+		}
+		std::sort(pattern.begin(), pattern.end());
+		pattern.erase(std::unique(pattern.begin(), pattern.end()), pattern.end());
+
+		for (int i = 0; i < dim; ++i) {
+			for (int j = i; j < dim; ++j) {
+				tmp_ind = start_ind + j;
+				//row_v.push_back(start_ind + j);
+				fwrite(&tmp_ind, sizeof(int), 1, fp);
+			}
+			for (int k = 0; k < pattern.size(); ++k) {
+			//	//val_v.push_back(static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
+			//	//row_v.push_back(pattern[k]);
+				fwrite(&pattern[k], sizeof(int), 1, fp);
+
+			}
+			nz += dim - i + pattern.size();
+			//nz += dim - i;
+			col_index_v.push_back(nz);
+		}
+		start_ind += dim;
+		pattern.clear();
+		supernodes_v.emplace_back(dim + supernodes_v.back());
+	}
+	//std::cout << "SIZE: " << col_index_v.size() << '\n';
+	for (int i = 0; i < col_index_v.size(); ++i) {
+		fwrite(&col_index_v[i], si, 1, fp);
+	}
+	for (int i = 0; i < supernodes_v.size(); ++i) {
+		fwrite(&supernodes_v[i], si, 1, fp);
+	}
+	//fwrite(&col_index_v, sizeof(std::vector<int>::value_type), col_index_v.size(), fp);
+	//fwrite(&supernodes_v, sizeof(std::vector<int>::value_type), supernodes_v.size(), fp);
+	sn = supernodes_v.size();
+	fclose(fp);
+	double t2 = omp_get_wtime();
+
+	return t2 - t1;
+}
+
+double get_random_L(int n, int& nz, size_t& sn, double density, double*& val, int*& row, int*& col_index, int*& nodes) {
+	int start_ind = 0, dim = 0, pattern_elems = 0, random_index = 0;
+	srand(static_cast <unsigned> (47));
+
+	std::vector<double> val_v;
+	std::vector<int> row_v;
+	std::vector<int> col_index_v;
+	std::vector<int> supernodes_v;
+	std::vector<int> pattern;
+	int max_node_size = 100;
+
+	double t1 = omp_get_wtime();
+	col_index_v.push_back(0.);
+	supernodes_v.push_back(0);
+
+	while (start_ind < n) {
+		dim = rand() % max_node_size + 1;
+		if (dim >= n - start_ind) {
+			dim = n - start_ind;
+		}
+
+		pattern_elems = (int)(density * (n - start_ind - dim));
+		for (int el = 0; el < pattern_elems; ++el) {
+			pattern.emplace_back(rand() % (n - start_ind - dim) + start_ind + dim);
+		}
+		std::sort(pattern.begin(), pattern.end());
+		pattern.erase(std::unique(pattern.begin(), pattern.end()), pattern.end());
+
+		for (int i = 0; i < dim; ++i) {
+			for (int j = i; j < dim; ++j) {
+				val_v.push_back(static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
+				row_v.push_back(start_ind + j);
+			}
+			for (int k = 0; k < pattern.size(); ++k) {
+				val_v.push_back(static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
+				row_v.push_back(pattern[k]);
+			}
+			nz += dim - i + pattern.size();
+			col_index_v.push_back(nz);
+		}
+		start_ind += dim;
+		pattern.clear();
+		supernodes_v.emplace_back(dim);
+	}
+	double t2 = omp_get_wtime() - t1;
+	//double t3 = omp_get_wtime();
+	//std::ofstream file;
+	//file.open("random_factor_L.txt");
+	//file << n << "\n";
+	//file << nz << "\n";
+	//file << supernodes_v.size() << "\n";
+	//for (int i = 0; i < nz; ++i) {
+	//	file << val_v[i] << " ";
+	//}
+	//file << "\n";
+	//for (int i = 0; i < nz; ++i) {
+	//	file << row_v[i] << " ";
+	//}
+	//file << "\n";
+	//for (int i = 0; i <= n; ++i) {
+	//	file << col_index_v[i] << " ";
+	//}
+	//file << "\n";
+	//int sum = 0;
+	//for (int i = 1; i < supernodes_v.size(); ++i) {
+	//	sum += supernodes_v[i];
+	//	file << sum << " ";
+	//}
+	//file << "\n";
+	//file.close();
+	//std::cout << "\n" << omp_get_wtime() - t3 << "\n";
+	//val = new double[nz];
+	//row = new int[nz];
+	//col_index = new int[n + 1];
+	//for (int i = 0; i < nz; ++i) {
+	//	val[i] = val_v[i];
+	//	row[i] = row_v[i];
+	//}
+	//sn = supernodes_v.size() + 1;
+	//nodes = new int[sn];
+
+	//double t3 = omp_get_wtime();
+	//nodes[0] = 0;
+	//for (int i = 1; i < sn; ++i) {
+	//	nodes[i] = nodes[i - 1] + nodes[i - 1];
+	//}
+	//double t4 = omp_get_wtime() - t3;
+	//delete[] unic_indices;
+	return t2;
+}
+
 void get_factor(int n, double*& val, int*& row, int*& col_index, double*& dense) {
 	sparse_to_dense(n, val, row, col_index, dense);
 	//std::cout.setf(std::ios::fixed);
@@ -208,13 +370,14 @@ void transpose(int n, int nz, double*& val, int*& row, int*& col_index,
 }
 
 double check_result(int n, double* x1, double* x2) {
-	double sum = 0.;
+	double sum = 0., norm = 0.;
 	//std::cout << "\nL_2(sol - pardiso_sol): \n";
 	for (int i = 0; i < n; ++i) {
 		sum += pow(x1[i] - x2[i], 2);
+		norm += x1[i] * x1[i];
 	}
 	//std::cout.setf(std::ios::fixed);
 	//std::cout.precision(32);
-	std::cout << " " << sqrt(sum);
+	std::cout << sqrt(sum) / sqrt(norm);
 	return sum;
 }
