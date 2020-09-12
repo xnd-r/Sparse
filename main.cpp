@@ -9,18 +9,31 @@ int main(int argc, char** argv) {
 	double* val = nullptr, *step_val = nullptr, *b = nullptr;
 	int *nodes = nullptr, *row = nullptr, *col_index = nullptr;
 	int *step_row = nullptr, *step_col_index = nullptr;
-	const char* algo = "base";
-	//const char* filename = argv[1];
-	//const char* algo = argv[2];
+	//const char* algo = "base";
+
+	const char* filename = argv[1];
+	const char* algo = argv[2];
 	bool pardiso_compare = false;
-	bool dtrsv_compare = false;
+	bool dtrsv_compare = true;
 	double time = 0.;
+	size_t pos = 0;
+	std::string token;
+	std::string file_name = filename;
+	pos = file_name.find("_");
+	n = std::atoi(file_name.substr(0, pos).c_str());
+	file_name.erase(0, pos + 1);
+	pos = file_name.find("_");
+	nz = std::atoi(file_name.substr(0, pos).c_str());
+	file_name.erase(0, pos + 1);
+	pos = file_name.find(".");
+	sn = std::atoi(file_name.substr(0, pos).c_str());
 
-	n = std::atoi(argv[1]);
-	double density = std::atof(argv[2]);
 
-	get_random_L_bin(n, nz, sn, density);
-	return(0);
+	//n = std::atoi(argv[1]);
+	//double density = std::atof(argv[2]);
+
+	//get_random_L_bin(n, nz, sn, density);
+	//return(0);
 
 	FILE *fp;
 	row = new int[nz];
@@ -28,7 +41,7 @@ int main(int argc, char** argv) {
 	col_index = new int[n + 1];
 	nodes = new int[sn];
 	auto si = sizeof(int);
-	if ((fp = fopen("BIN_MAT.bin", "rb")) == NULL) {
+	if ((fp = fopen(filename, "rb")) == NULL) {
 		printf("Cannot open file.\n");
 		exit(1);
 	}
@@ -37,9 +50,8 @@ int main(int argc, char** argv) {
 	fread(nodes, sizeof(int), sn, fp);
 
 	for (int i = 0; i < nz; ++i) {
-		val[i] = 1 + rand() % 10;
+		val[i] = (double)rand() / RAND_MAX;
 	}
-
 
 	//read_ccs(filename, n, nz, val, row, col_index);
 	b = new double[n * 2]{ 0. };
@@ -58,10 +70,10 @@ int main(int argc, char** argv) {
 		time += base_gauss_lower(n, val_t, row_t, col_index_t, x, b);
 		//print_result(n, x, b);
 		std::cout << time << "\n";
-		//#pragma omp parallel for
-		//for (int i = 0; i < n; ++i) {
-		//	y[i] = x[i];
-		//}
+		#pragma omp parallel for
+		for (int i = 0; i < n; ++i) {
+			y[i] = x[i];
+		}
 		//time += base_gauss_upper(n, val, row, col_index, y, x);
 		delete[] val_t;
 		delete[] row_t;
@@ -74,10 +86,10 @@ int main(int argc, char** argv) {
 		std::cout << time << "\n";
 
 
-		//#pragma omp parallel for
-		//for (int i = 0; i < n; ++i) {
-		//	y[i] = x[i];
-		//}
+		#pragma omp parallel for
+		for (int i = 0; i < n; ++i) {
+			y[i] = x[i];
+		}
 		//time += supernodal_upper(sn, nodes, y, val, row, col_index);
 	}
 	else if (strcmp(algo, "blas") == 0) {
@@ -92,15 +104,15 @@ int main(int argc, char** argv) {
 		int nz_pad = 0;
 		//get_supernodes(n, nz, val, row, col_index, nodes, sn, step_val, step_row, step_col_index);
 		ccs2ccs_pad(val, row, col_index, val_pad, row_pad, col_index_pad, nodes, sn, nz_pad);
-
+		std::cout << "alive";
 		time += supernodal_blas_lower(n, sn, nodes, x, val_pad, row_pad, col_index_pad);
 		//print_result(n, x, b);
 		std::cout << time << "\n";
 
-		//#pragma omp parallel for
-		//for (int i = 0; i < n; ++i) {
-		//	y[i] = x[i];
-		//}
+		#pragma omp parallel for
+		for (int i = 0; i < n; ++i) {
+			y[i] = x[i];
+		}
 		//time += supernodal_blas_upper(n, nz, sn, nodes, y, val_pad, row_pad, col_index_pad);
 		delete[] val_pad;
 		delete[] row_pad;
@@ -108,6 +120,9 @@ int main(int argc, char** argv) {
 	}
 	else if (strcmp(algo, "dtrsv") == 0) {
 		get_vector(n, b);
+		//for (int i = 0; i < n; ++i) {
+		//	b[n + i] = b[i];
+		//}
 		sparse_matrix_t A;
 		mkl_sparse_d_create_csc(&A, SPARSE_INDEX_BASE_ZERO, n, n, col_index, col_index + 1, row, val);
 		matrix_descr descr;
@@ -136,7 +151,10 @@ int main(int argc, char** argv) {
 		check_result(n, x, y);
 	}
 	if (dtrsv_compare) {
-		get_vector(n, b);
+		//get_vector(n, b);
+		for (int i = 0; i < n; ++i) {
+			b[n + i] = b[i];
+		}
 		sparse_matrix_t A;
 		mkl_sparse_d_create_csc(&A, SPARSE_INDEX_BASE_ZERO, n, n, col_index, col_index + 1, row, val);
 		matrix_descr descr;
@@ -144,7 +162,7 @@ int main(int argc, char** argv) {
 		descr.mode = SPARSE_FILL_MODE_LOWER;
 		descr.diag = SPARSE_DIAG_NON_UNIT;
 		mkl_sparse_d_trsv(SPARSE_OPERATION_NON_TRANSPOSE, 1., A, descr, b, x);
-		std::cout << "\n" << time << "\n";
+		//std::cout << "\n" << time << "\n";
 		check_result(n, x, y);
 	}
 

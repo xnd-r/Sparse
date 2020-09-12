@@ -32,7 +32,8 @@ void read_ccs(const char* name, int& n, int& nz, double*& val, int*& row, int*& 
 void get_vector(int n, double* b) {
 	#pragma omp parallel for num_threads(4)
 	for (int i = 0; i < n; ++i) {
-		b[i] = i + 1.;
+		//b[i] = i + 1.;
+		b[i] = (double)rand() / RAND_MAX;
 		b[n + i] = b[i];
 	}
 }
@@ -256,7 +257,7 @@ void transpose(int n, int nz, double*& val, int*& row, int*& col_index,
 
 double check_result(int n, double* x1, double* x2) {
 	double sum = 0., norm = 0.;
-	//std::cout << "\nL_2(sol - pardiso_sol): \n";
+	std::cout << "\nL_2 norm: \n";
 	for (int i = 0; i < n; ++i) {
 		sum += pow(x1[i] - x2[i], 2);
 		norm += x1[i] * x1[i];
