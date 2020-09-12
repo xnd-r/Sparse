@@ -27,10 +27,6 @@ void read_ccs(const char* name, int& n, int& nz, double*& val, int*& row, int*& 
 		}
 	}
 	col_index[n] = nz;
-	//for (int i = 0; i <= n; ++i) {
-	//	std::cout << col_index[i] << " ";
-	//}
-	//std::cout << "\n";
 }
 
 void get_vector(int n, double* b) {
@@ -111,8 +107,8 @@ void dense_to_sparse(int n, double* dense, double*& val_s, int*& row_s, int*& co
 double get_random_L_bin(int n, int& nz, size_t& sn, double density) {
 	int start_ind = 0, dim = 0, pattern_elems = 0, random_index = 0;
 	srand(static_cast <unsigned> (47));
-	//int max_node_size = n / 10 / log(n);
-	int max_node_size = 3;
+	int max_node_size = n / 10 / log(n);
+	//int max_node_size = 3;
 
 
 	std::vector<int> col_index_v;
@@ -146,129 +142,33 @@ double get_random_L_bin(int n, int& nz, size_t& sn, double density) {
 		for (int i = 0; i < dim; ++i) {
 			for (int j = i; j < dim; ++j) {
 				tmp_ind = start_ind + j;
-				//row_v.push_back(start_ind + j);
 				fwrite(&tmp_ind, sizeof(int), 1, fp);
 			}
 			for (int k = 0; k < pattern.size(); ++k) {
-			//	//val_v.push_back(static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
-			//	//row_v.push_back(pattern[k]);
 				fwrite(&pattern[k], sizeof(int), 1, fp);
 
 			}
 			nz += dim - i + pattern.size();
-			//nz += dim - i;
 			col_index_v.push_back(nz);
 		}
 		start_ind += dim;
 		pattern.clear();
 		supernodes_v.emplace_back(dim + supernodes_v.back());
 	}
-	//std::cout << "SIZE: " << col_index_v.size() << '\n';
 	for (int i = 0; i < col_index_v.size(); ++i) {
 		fwrite(&col_index_v[i], si, 1, fp);
 	}
 	for (int i = 0; i < supernodes_v.size(); ++i) {
 		fwrite(&supernodes_v[i], si, 1, fp);
 	}
-	//fwrite(&col_index_v, sizeof(std::vector<int>::value_type), col_index_v.size(), fp);
-	//fwrite(&supernodes_v, sizeof(std::vector<int>::value_type), supernodes_v.size(), fp);
 	sn = supernodes_v.size();
 	fclose(fp);
 	double t2 = omp_get_wtime();
 
+	std::cout << "nz: " << nz << "\t sn: " << sn << "\n" << "time: " << t2 - t1 << "\n";
 	return t2 - t1;
 }
 
-double get_random_L(int n, int& nz, size_t& sn, double density, double*& val, int*& row, int*& col_index, int*& nodes) {
-	int start_ind = 0, dim = 0, pattern_elems = 0, random_index = 0;
-	srand(static_cast <unsigned> (47));
-
-	std::vector<double> val_v;
-	std::vector<int> row_v;
-	std::vector<int> col_index_v;
-	std::vector<int> supernodes_v;
-	std::vector<int> pattern;
-	int max_node_size = 100;
-
-	double t1 = omp_get_wtime();
-	col_index_v.push_back(0.);
-	supernodes_v.push_back(0);
-
-	while (start_ind < n) {
-		dim = rand() % max_node_size + 1;
-		if (dim >= n - start_ind) {
-			dim = n - start_ind;
-		}
-
-		pattern_elems = (int)(density * (n - start_ind - dim));
-		for (int el = 0; el < pattern_elems; ++el) {
-			pattern.emplace_back(rand() % (n - start_ind - dim) + start_ind + dim);
-		}
-		std::sort(pattern.begin(), pattern.end());
-		pattern.erase(std::unique(pattern.begin(), pattern.end()), pattern.end());
-
-		for (int i = 0; i < dim; ++i) {
-			for (int j = i; j < dim; ++j) {
-				val_v.push_back(static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
-				row_v.push_back(start_ind + j);
-			}
-			for (int k = 0; k < pattern.size(); ++k) {
-				val_v.push_back(static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
-				row_v.push_back(pattern[k]);
-			}
-			nz += dim - i + pattern.size();
-			col_index_v.push_back(nz);
-		}
-		start_ind += dim;
-		pattern.clear();
-		supernodes_v.emplace_back(dim);
-	}
-	double t2 = omp_get_wtime() - t1;
-	//double t3 = omp_get_wtime();
-	//std::ofstream file;
-	//file.open("random_factor_L.txt");
-	//file << n << "\n";
-	//file << nz << "\n";
-	//file << supernodes_v.size() << "\n";
-	//for (int i = 0; i < nz; ++i) {
-	//	file << val_v[i] << " ";
-	//}
-	//file << "\n";
-	//for (int i = 0; i < nz; ++i) {
-	//	file << row_v[i] << " ";
-	//}
-	//file << "\n";
-	//for (int i = 0; i <= n; ++i) {
-	//	file << col_index_v[i] << " ";
-	//}
-	//file << "\n";
-	//int sum = 0;
-	//for (int i = 1; i < supernodes_v.size(); ++i) {
-	//	sum += supernodes_v[i];
-	//	file << sum << " ";
-	//}
-	//file << "\n";
-	//file.close();
-	//std::cout << "\n" << omp_get_wtime() - t3 << "\n";
-	//val = new double[nz];
-	//row = new int[nz];
-	//col_index = new int[n + 1];
-	//for (int i = 0; i < nz; ++i) {
-	//	val[i] = val_v[i];
-	//	row[i] = row_v[i];
-	//}
-	//sn = supernodes_v.size() + 1;
-	//nodes = new int[sn];
-
-	//double t3 = omp_get_wtime();
-	//nodes[0] = 0;
-	//for (int i = 1; i < sn; ++i) {
-	//	nodes[i] = nodes[i - 1] + nodes[i - 1];
-	//}
-	//double t4 = omp_get_wtime() - t3;
-	//delete[] unic_indices;
-	return t2;
-}
 
 void get_factor(int n, double*& val, int*& row, int*& col_index, double*& dense) {
 	sparse_to_dense(n, val, row, col_index, dense);
@@ -352,21 +252,6 @@ void transpose(int n, int nz, double*& val, int*& row, int*& col_index,
 			col_index_t[RIndex + 1]++;
 		}
 	}
-	//std::cout << "\n";
-	//for (int i = 0; i < nz; ++i) {
-	//	std::cout << val_t[i] << " ";
-	//}
-	//std::cout << "\n";
-
-	//for (int i = 0; i < nz; ++i) {
-	//	std::cout << row_t[i] << " ";
-	//}
-	//std::cout << "\n";
-
-	//for (int i = 0; i <= n; ++i) {
-	//	std::cout << col_index_t[i] << " ";
-	//}
-	//std::cout << "\n";
 }
 
 double check_result(int n, double* x1, double* x2) {
@@ -380,4 +265,32 @@ double check_result(int n, double* x1, double* x2) {
 	//std::cout.precision(32);
 	std::cout << sqrt(sum) / sqrt(norm);
 	return sum;
+}
+
+
+double ccs2ccs_pad(double* val, int* row, int* col_index, double* val_pad, int* row_pad, int* col_index_pad, int* nodes, size_t& sn, int& nnz) {
+	int pad = 0;
+	int global_pad = 0;
+	//col_index_pad[0] = 0;
+	int col_ind_cnt = 0;
+	for (int si = 0; si < (int)sn - 1; ++si) {
+		pad = nodes[si + 1] - nodes[si];
+
+		for (int d = 0; d < pad; ++d) {
+			for (int ci = 0; ci < d; ++ci, ++global_pad) {
+				val_pad[global_pad] = 0.0;
+				row_pad[global_pad] = row[col_index[nodes[si]]] + ci;
+				col_ind_cnt++;
+			}
+
+			for (int ci = col_index[nodes[si] + d]; ci < col_index[nodes[si] + d + 1]; ++ci, ++global_pad) {
+				val_pad[global_pad] = val[ci];
+				row_pad[global_pad] = row[ci];
+				col_ind_cnt++;
+			}
+			col_index_pad[nodes[si] + d + 1] = col_ind_cnt;
+		}
+	}
+	nnz = col_ind_cnt;
+	return 0;
 }
